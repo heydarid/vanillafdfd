@@ -5,17 +5,30 @@ Purpose:        Implements the difference matrices on a given
 Author:         David Heydari (Jan. 2021)
 Assumptions:    Uniform discretization Δx, Δy, and Δz.
 """
+import scipy.constants as sc
+from solve import maxwell
+from scipy.sparse import csc_matrix, block_diag, bmat, diags
+from scipy.sparse.linalg import inv, eigs
+from solve.operator.differences import *
 
-from .. import maxwell
-from scipy.sparse import diags
-from scipy.sparse.linalg import eigs
-
-def solveE(k_eigs, Ce, Ch, ω0, Tɛ, Tμ):
-    invTμ = diags(1./Tμ.diagonal())
-    A = Ch * invTμ * Ce - ω0**2 * Tɛ
-    return eigs(A, k_eigs, which='SM')
-
-def solveH(k_eigs, Ce, Ch, ω0, Tɛ, Tμ):
-    invTɛ = diags(1./Tɛ.diagonal()) 
-    A = Ce * invTɛ * Ch - ω0**2 * Tμ
-    return eigs(A, k_eigs, which='SM')
+def Oh(tex, tey, tez, Nx, Ny, Δx, Δy):
+    T = bmat([
+                [tex, None],
+                [None, tey]
+            ])
+    Fd1 = bmat([
+                [-1*Dy_f(Nx, Ny, Δy)],
+                [Dx_f(Nx, Ny, Δx)]
+            ])
+    Bd = bmat([
+                [-1*Dy_b(Nx, Ny, Δy), Dx_b(Nx, Ny, Δx)]
+            ])
+    Bd2 = bmat([
+                [Dx_b(Nx, Ny, Δx)],
+                [Dy_b(Nx, Ny, Δy)]
+            ])
+    Fd2 = bmat([
+                [Dx_f(Nx, Ny, Δx), Dy_f(Nx, Ny, Δy)]
+            ])
+    
+    return csr_matrix((ω**2 * sc.mu_0 * T) + (T @ Fd1 @ inv(tez) @ Bd) + (Bd2 @ Fd2))
