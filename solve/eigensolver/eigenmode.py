@@ -6,9 +6,8 @@ Author:         David Heydari (Jan. 2021)
 Assumptions:    Uniform discretization Δx, Δy, and Δz.
 """
 import scipy.constants as sc
-from solve import maxwell
-from scipy.sparse import csc_matrix, block_diag, bmat, diags
-from scipy.sparse.linalg import inv, eigs
+from scipy.sparse import csc_matrix, bmat
+from scipy.sparse.linalg import inv
 from solve.operator.differences import *
 
 def Oh(tex, tey, tez, Nx, Ny, Δx, Δy):
@@ -32,3 +31,25 @@ def Oh(tex, tey, tez, Nx, Ny, Δx, Δy):
             ])
     
     return csr_matrix((ω**2 * sc.mu_0 * T) + (T @ Fd1 @ inv(tez) @ Bd) + (Bd2 @ Fd2))
+
+def Oe(tex, tey, tez, Nx, Ny, Δx, Δy):
+    T = bmat([
+                [tex, None],
+                [None, tey]
+            ])
+    Fd1 = bmat([
+                [-1*Dy_f(Nx, Ny, Δy)],
+                [Dx_f(Nx, Ny, Δx)]
+            ])
+    Bd = bmat([
+                [-1*Dy_b(Nx, Ny, Δy), Dx_b(Nx, Ny, Δx)]
+            ])
+    Bd2 = bmat([
+                [Dx_b(Nx, Ny, Δx)],
+                [Dy_b(Nx, Ny, Δy)]
+            ])
+    Fd2 = bmat([
+                [Dx_f(Nx, Ny, Δx), Dy_f(Nx, Ny, Δy)]
+            ])
+    
+    return csr_matrix((ω**2 * sc.mu_0 * T) + (Fd1 @ Bd) + (Bd2 @ inv(tez) @ Fd2 @ T))
